@@ -1,19 +1,12 @@
+const {Genre, validate}=require('../models/genre')
 const mongoose=require('mongoose')
 const express=require('express')
 const router=express.Router();
 const Joi=require('joi');
+const auth=require ('../middleware/auth')
+const admin=require ('../middleware/admin')
 
 
-
-const Genre= mongoose.model('Genre',new mongoose.Schema({
-    name:{
-        type:String,
-        required:true,
-        minlength:5,
-        maxlength:50
-    }
-    
-}))
 
 
 
@@ -21,7 +14,7 @@ const Genre= mongoose.model('Genre',new mongoose.Schema({
 router.get('/',async (req,res)=>{
     try{
         const genres= await Genre.find().sort('name')
-        console.log(genres)
+        
     res.send(genres)
 }
     catch(err){
@@ -39,9 +32,13 @@ router.get('/:id',async(req, res)=>{
 
 //method to add a new genre in the list
 
-router.post('/',async (req,res)=>{
+router.post('/',auth,async (req,res)=>{
+
+    const token=req.header('x-auth-token')
+    res.status(401)
+
     //have to validate if the genre is valid
-    const {error}=validateGenre(req.body)
+    const {error}=validate(req.body)
     if (error) {
         const errorMessage=error.details.map(err=>err.message)
         return res.status(400).send(`Bad Request: ${errorMessage}`)}
@@ -56,7 +53,7 @@ router.post('/',async (req,res)=>{
 
 router.put('/:id',async(req, res)=>{
 
-    const {error}=validateGenre(req.body)
+    const {error}=validate(req.body)
     if (error) {
     const errorMessage=error.details.map(err=>err.message)
     return res.status(400).send(`Bad Request: ${errorMessage}`)
@@ -72,7 +69,7 @@ res.send(genre)
 
 })
 
-router.delete('/:id',async (req,res)=>{
+router.delete('/:id',[auth,admin],async (req,res)=>{
     const genre=await Genre.findByIdAndDelete(req.params.id)
     if(!genre) return res.status(404).send("Id does not exist")
 
@@ -83,12 +80,6 @@ router.delete('/:id',async (req,res)=>{
     
 })
 
-//function to validate genres
-function validateGenre(genre){
-    const schema=Joi.object({
-        name: Joi.string().min(3).max(30).required()
-    })
-    return schema.validate(genre)
-}
+
 
 module.exports=router;

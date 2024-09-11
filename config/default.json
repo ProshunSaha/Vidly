@@ -1,3 +1,4 @@
 {
-    "name":"Express App"
+    "name":"Express App",
+    "jwtPrivateKey":""
 }
